@@ -10,13 +10,7 @@ Author URI: http://generatewp.com
 * GWP_Widget_cache
 */
 class GWP_Widget_cache{
-    /**
-     * $cache_time
-     * transient exiration time
-     * @var int
-     */
-    public $cache_time = 43200; // 12 hours in seconds
-     
+
     /**
      * __construct
      *
@@ -58,7 +52,7 @@ class GWP_Widget_cache{
             return $instance;
         }
         //check if we need to cache this widget?
-        if(isset($instance['wc_cache']) && $instance['wc_cache'] == true)
+        if(!isset($instance['wc_cache']) || $instance['wc_cache'] < 1)
             return $instance;
  
         //simple timer to clock the widget rendring
@@ -77,7 +71,7 @@ class GWP_Widget_cache{
             //get rendered widget from buffer
             $cached_widget = ob_get_clean();
             //save/cache the widget output as a transient
-            set_transient( $transient_name, $cached_widget, $this->cache_time);
+            set_transient( $transient_name, $cached_widget, $instance['wc_cache']);
         }
  
         //output the widget
@@ -91,7 +85,7 @@ class GWP_Widget_cache{
  
     /**
      * in_widget_form
-     * this method displays a checkbox in the widget panel
+     * this method displays a field in the widget panel to enter the number of seconds a widget should be cached for
      *
      * @param WP_Widget $t     The widget instance, passed by reference.
      * @param null      $return   Return null if new fields are added.
@@ -104,16 +98,16 @@ class GWP_Widget_cache{
             array(
                 'title' => '',
                 'text' => '',
-                'wc_cache' => null
+                'wc_cache' => ''
             )
         );
- 
         if ( !isset($instance['wc_cache']) )
-            $instance['wc_cache'] = null;
+            $instance['wc_cache'] = '0';
         ?>
         <p>
-            <input id="<?php echo $t->get_field_id('wc_cache'); ?>" name="<?php echo $t->get_field_name('wc_cache'); ?>" type="checkbox" <?php checked(isset($instance['wc_cache']) ? $instance['wc_cache'] : 0); ?> />
-            <label for="<?php echo $t->get_field_id('wc_cache'); ?>"><?php _e('don\'t cache this widget?'); ?></label>
+            <input id="<?php echo $t->get_field_id('wc_cache'); ?>" name="<?php echo $t->get_field_name('wc_cache'); ?>" type="text" value="<?php echo $instance['wc_cache'] ?>" />
+             <?php echo '<!-- cache set to '.$instance['wc_cache'].'secs -->';?>
+            <label for="<?php echo $t->get_field_id('wc_cache'); ?>"><?php _e('Cache time in secs?'); ?></label>
         </p>
         <?php
     }
@@ -127,7 +121,7 @@ class GWP_Widget_cache{
      */
     function widget_update_callback($instance, $new_instance, $old_instance){
         //save the checkbox if its set
-        $instance['wc_cache'] = isset($new_instance['wc_cache']);
+        $instance['wc_cache'] = (int)$new_instance['wc_cache'];
         return $instance;
     }
 }//end GWP_Widget_cache class
@@ -138,3 +132,4 @@ add_action( 'plugins_loaded', 'GWP_Widget_cache_init' );
 function GWP_Widget_cache_init() {
     $GLOBALS['GWP_Widget_cache'] = new GWP_Widget_cache();
 }
+
